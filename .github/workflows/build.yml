@@ -1,0 +1,42 @@
+name: Build Data Converter
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'  # Raz w tygodniu (poniedziałek o północy UTC)
+  push:
+    branches: [ "main" ]  # Uruchamia się po pushu na main
+  workflow_dispatch:      # Pozwala uruchomić ręcznie w GitHub UI
+
+jobs:
+  build:
+    runs-on: windows-latest  # System Windows z Pythonem
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller PyQt5 pyyaml lxml
+    
+    - name: Build CLI executable
+      run: |
+        pyinstaller --onefile src/main.py --name data_converter_cli
+        
+    - name: Build GUI executable
+      run: |
+        pyinstaller --onefile --noconsole src/gui.py --name data_converter_gui
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: executables
+        path: |
+          dist/data_converter_cli.exe
+          dist/data_converter_gui.exe

@@ -4,39 +4,44 @@ on:
   schedule:
     - cron: '0 0 * * 1'  # Raz w tygodniu (poniedziałek o północy UTC)
   push:
-    branches: [ "main" ]  # Uruchamia się po pushu na main
-  workflow_dispatch:      # Pozwala uruchomić ręcznie w GitHub UI
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest  # System Windows z Pythonem
-    
+    runs-on: windows-latest
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
-    
+      uses: actions/checkout@v4  # Najnowsza wersja checkout
+
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5  # Najnowsza wersja setup-python
       with:
-        python-version: '3.10'
-    
+        python-version: '3.11'  # Zalecana nowsza wersja Pythona
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller PyQt5 pyyaml lxml
-    
+
     - name: Build CLI executable
       run: |
         pyinstaller --onefile src/main.py --name data_converter_cli
-        
+        if (!(Test-Path -Path "dist")) { New-Item -ItemType Directory -Path "dist" }
+        Move-Item -Path "dist/data_converter_cli.exe" -Destination "artifacts/" -Force
+
     - name: Build GUI executable
       run: |
         pyinstaller --onefile --noconsole src/gui.py --name data_converter_gui
-        
+        if (!(Test-Path -Path "artifacts")) { New-Item -ItemType Directory -Path "artifacts" }
+        Move-Item -Path "dist/data_converter_gui.exe" -Destination "artifacts/" -Force
+
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # Najnowsza wersja upload-artifact
       with:
         name: executables
         path: |
-          dist/data_converter_cli.exe
-          dist/data_converter_gui.exe
+          artifacts/data_converter_cli.exe
+          artifacts/data_converter_gui.exe
+        retention-days: 7  # Automatyczne usuwanie artifactów po 7 dniach
